@@ -1,4 +1,4 @@
-from blackjack import abstractDealer, playerActions, abstractGame, abstractPlayer, CARD_TYPES, THRESH
+from blackjack import abstractDealer, playerActions, abstractGame, abstractPlayer, abstractParticipant, CARD_TYPES, THRESH
 from random import shuffle
 from players import dealerBase, interactivePlayer, playerBase
 
@@ -13,12 +13,12 @@ class gameBase(abstractGame):
         self.dealer = dealer
         self.dealer.setCards(self.cards.pop(), self.cards.pop())
         self.players = players
-        self.bets = {}
+        self.bets:dict[abstractPlayer, int] = {}
         for p in self.players:
             self.bets[p] = p.bet()
             p.setCards(self.cards.pop(), self.cards.pop())
             
-    def turn(self) -> list[abstractPlayer] | None:
+    def turn(self) -> list[abstractParticipant] | None:
         """Performs a turn, returns None in case game hasn't been resolved yet"""
         self.turnId += 1
         keepGoing = False #if everybody STANDs then this remains false and the game ends
@@ -36,10 +36,23 @@ class gameBase(abstractGame):
             return self.resolve()
         return None
     
-    def resolve(self) -> list[abstractPlayer]:
+    def resolve(self) -> list[abstractParticipant]:
         """Determines who is the winner and returns a list of winners"""
         winner = list()
         highest = 0
+        #Resolve the dealer
+        dealerSum = self.dealer.sum()
+        if self.dealer.cards.isBlackJack():
+            winner.append(self.dealer)
+            self.payOut(winner)
+            return winner
+        else:
+            if dealerSum <= THRESH:
+                winner = [self.dealer]
+                highest = dealerSum
+            else:
+                self.payOut(self.players)
+                return self.players
         #Resolve each of the players
         for p in self.players:
             if p.cards.isBlackJack():
@@ -56,32 +69,19 @@ class gameBase(abstractGame):
                         winner = [p]
                     elif highest == thisSum:
                         winner.append(p)
-        #Resolve the dealer
-        dealerSum = self.dealer.cards.sum() + self.dealer.hiddenCard
-        if self.dealer.cards.isBlackJack():
-            if highest != THRESH + 1:
-                winner = [self.dealer]
-                highest = THRESH + 1
-            else:
-                winner.append(self.dealer)
-        else:
-            if dealerSum <= THRESH:
-                if highest < dealerSum:
-                    winner = [self.dealer]
-                elif highest == dealerSum:
-                    winner.append(self.dealer)
-        #pay out the bets
-        #TODO finish
+        return winner
+    
+    def payOut(self, winners:list[abstractParticipant]) -> None:
+        """Pays out the bets of each winner and collects loser's bets to the dealer"""
         for key, value in self.bets.items():
-            if key in winner:
+            if key in winners:
                 value = int(value * 1.5)
                 self.dealer.funds -= value
                 key.funds += value
             else:
                 self.dealer.funds += value
-        return winner
-    
-    def play(self) -> list[abstractPlayer]:
+
+    def play(self) -> list[abstractParticipant]:
         """Runs turns until a winner presents iself"""
         res = None
         while res == None:
