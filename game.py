@@ -28,55 +28,48 @@ class gameBase(abstractGame):
                 if action == playerActions.HIT:
                     p.cards.append(self.cards.pop())
                     keepGoing = True
-        #handle the dealer's turn
-        if self.dealer.sum() <= THRESH and self.dealer.turn(self) == playerActions.HIT:
-            self.dealer.cards.append(self.cards.pop())
-            keepGoing = True
         if not keepGoing:
             return self.resolve()
         return None
     
     def resolve(self) -> list[abstractParticipant]:
         """Determines who is the winner and returns a list of winners"""
-        winner = list()
-        highest = 0
+        #handle the dealer's turn
+        action = self.dealer.turn(self)
+        while action != playerActions.STAND:
+            if action == playerActions.HIT:
+                self.dealer.cards.append(self.cards.pop())
+            action = self.dealer.turn(self)
+        winner = []
+        ignore = []
         #Resolve the dealer
-        dealerSum = self.dealer.sum()
-        if self.dealer.cards.isBlackJack():
-            winner.append(self.dealer)
-            self.payOut(winner)
-            return winner
+        if self.dealer.cards.isBlackJack(): #if the dealer has a blackjack then he insta wins against everybody who didnt also blackJack
+            dealerSum = THRESH + 1
         else:
-            if dealerSum <= THRESH:
-                winner = [self.dealer]
-                highest = dealerSum
-            else:
-                self.payOut(self.players)
-                return self.players
+            dealerSum = self.dealer.sum()
+        if dealerSum > THRESH: #if the dealer went bust then everybody wins
+            dealerSum = 0
         #Resolve each of the players
         for p in self.players:
-            if p.cards.isBlackJack():
-                if highest != THRESH + 1:
-                    winner = [p]
-                    highest = THRESH + 1
-                else:
+            thisSum = p.cards.sum()
+            if thisSum <= THRESH:
+                if p.cards.isBlackJack():
+                    thisSum = THRESH + 1
+                if thisSum > dealerSum:
                     winner.append(p)
-            else:
-                thisSum = p.cards.sum()
-                if thisSum <= THRESH:
-                    if highest < thisSum:
-                        highest = thisSum
-                        winner = [p]
-                    elif highest == thisSum:
-                        winner.append(p)
+                elif thisSum == dealerSum:
+                    ignore.append(p)
+        self.payOut(winner, ignore)
         return winner
     
-    def payOut(self, winners:list[abstractParticipant]) -> None:
+    def payOut(self, winners:list[abstractParticipant], ignore:list[abstractParticipant]=[]) -> None:
         """Pays out the bets of each winner and collects loser's bets to the dealer"""
         for key, value in self.bets.items():
             if key in winners:
-                value = int(value * 1.5)
-                self.dealer.funds -= value
+                bonus = int(value * 0.5)
+                self.dealer.funds -= bonus
+                key.funds += value + bonus
+            elif key in ignore:
                 key.funds += value
             else:
                 self.dealer.funds += value
@@ -90,6 +83,8 @@ class gameBase(abstractGame):
 
 if __name__ == "__main__":
     game = gameBase(players=(playerBase("AI"), interactivePlayer("Player")))
+    res = game.play()
+    print(game.dealer)
     print("Winners:")
-    for w in game.play():
+    for w in res:
         print(str(w))

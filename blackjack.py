@@ -19,12 +19,14 @@ class cardSet(list[int]):
     ACE_ALT:int = 1
     def sum(self) -> int:
         """Sums the values contained wihtin the card set"""
+        self.sort()
         res = 0
         for i in self:
-            if res > THRESH and i == CARD_TYPES[-1]:
+            temp = res + i
+            if temp > THRESH and i == CARD_TYPES[-1]:
                 res += self.ACE_ALT
             else:
-                res += i
+                res = temp
         return res
     def isBlackJack(self) -> bool:
         return Counter(self) == Counter(BLACKJACK)
