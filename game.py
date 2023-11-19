@@ -1,4 +1,4 @@
-from blackjack import abstractDealer, playerActions, abstractGame, abstractPlayer, abstractParticipant, CARD_TYPES, THRESH, hand, abstractHand
+from blackjack import abstractDealer, playerActions, abstractGame, abstractPlayer, abstractParticipant, CARD_TYPES, THRESH, hand, abstractHand, DOUBLE_TURN_LIMIT
 from random import shuffle
 from players import dealerBase, interactivePlayer, playerBase
 
@@ -30,6 +30,8 @@ class gameBase(abstractGame):
                     p.cards.append(self.cards.pop())
                     keepGoing = True
                 elif action == playerActions.DOUBLE_DOWN:
+                    if self.turnId > DOUBLE_TURN_LIMIT:
+                        raise Exception("Too late to double down")
                     p.player.funds -= self.bets[p]
                     self.bets[p] += self.bets[p]
                     p.cards.append(self.cards.pop())

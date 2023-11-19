@@ -17,6 +17,7 @@ class playerActions(Enum):
     STAND = 0
     HIT = 1
     DOUBLE_DOWN = 2
+    SPLIT = 3
 
 class cardSet(list[int]):
     """A list of ints that is meant to represent a list of card values"""
