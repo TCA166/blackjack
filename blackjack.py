@@ -11,8 +11,9 @@ BLACKJACK = [10, 11]
 THRESH = 21
 
 class playerActions(Enum):
-    HIT = 1
     STAND = 0
+    HIT = 1
+    DOUBLE_DOWN = 2
 
 class cardSet(list[int]):
     """A list of ints that is meant to represent a list of card values"""

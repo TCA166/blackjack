@@ -12,7 +12,7 @@ class gameBase(abstractGame):
         self.turnId = 0
         self.dealer = dealer
         self.dealer.setCards(self.cards.pop(), self.cards.pop())
-        self.players = players
+        self.players = list(players)
         self.bets:dict[abstractPlayer, int] = {}
         for p in self.players:
             self.bets[p] = p.bet()
@@ -28,6 +28,11 @@ class gameBase(abstractGame):
                 if action == playerActions.HIT:
                     p.cards.append(self.cards.pop())
                     keepGoing = True
+                elif action == playerActions.DOUBLE_DOWN:
+                    p.funds -= self.bets[p]
+                    self.bets[p] += self.bets[p]
+                    p.cards.append(self.cards.pop())
+                    self.players.remove(p)
         if not keepGoing:
             return self.resolve()
         return None
@@ -45,12 +50,13 @@ class gameBase(abstractGame):
         #Resolve the dealer
         if self.dealer.cards.isBlackJack(): #if the dealer has a blackjack then he insta wins against everybody who didnt also blackJack
             dealerSum = THRESH + 1
+            winner.append(self.dealer)
         else:
             dealerSum = self.dealer.sum()
         if dealerSum > THRESH: #if the dealer went bust then everybody wins
             dealerSum = 0
         #Resolve each of the players
-        for p in self.players:
+        for p in self.bets.keys():
             thisSum = p.cards.sum()
             if thisSum <= THRESH:
                 if p.cards.isBlackJack():

@@ -49,11 +49,13 @@ class interactivePlayer(playerBase):
                 print(f"{p.name} cards:{p.cards}")
         print(str(self))
         while True:
-            action = input("Hit or stand?[H/S]").capitalize()
+            action = input("Hit, stand or double down?[H/S/D]").capitalize()
             if action == "H":
                 return playerActions.HIT
             elif action == "S":
                 return playerActions.STAND
+            elif action == "D":
+                return playerActions.DOUBLE_DOWN
             else:
                 print("Command misunderstood")
     def bet(self) -> int:
