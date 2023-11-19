@@ -1,4 +1,4 @@
-from blackjack import abstractDealer, playerActions, abstractGame, abstractPlayer, abstractParticipant, CARD_TYPES, THRESH
+from blackjack import abstractDealer, playerActions, abstractGame, abstractPlayer, abstractParticipant, CARD_TYPES, THRESH, hand, abstractHand
 from random import shuffle
 from players import dealerBase, interactivePlayer, playerBase
 
@@ -12,27 +12,28 @@ class gameBase(abstractGame):
         self.turnId = 0
         self.dealer = dealer
         self.dealer.setCards(self.cards.pop(), self.cards.pop())
-        self.players = list(players)
-        self.bets:dict[abstractPlayer, int] = {}
-        for p in self.players:
-            self.bets[p] = p.bet()
-            p.setCards(self.cards.pop(), self.cards.pop())
+        self.bets:dict[hand, int] = {}
+        self.hands = []
+        for p in players:
+            h = hand(p, self.cards.pop(), self.cards.pop())
+            self.bets[h] = p.bet()
+            self.hands.append(h)
             
     def turn(self) -> list[abstractParticipant] | None:
         """Performs a turn, returns None in case game hasn't been resolved yet"""
         self.turnId += 1
         keepGoing = False #if everybody STANDs then this remains false and the game ends
-        for p in self.players: #foreach player
+        for p in self.hands: #foreach player
             if p.cards.sum() < THRESH:
-                action = p.turn(self)
+                action = p.player.turn(self.dealer.cards, p, self.turnId)
                 if action == playerActions.HIT:
                     p.cards.append(self.cards.pop())
                     keepGoing = True
                 elif action == playerActions.DOUBLE_DOWN:
-                    p.funds -= self.bets[p]
+                    p.player.funds -= self.bets[p]
                     self.bets[p] += self.bets[p]
                     p.cards.append(self.cards.pop())
-                    self.players.remove(p)
+                    self.hands.remove(p)
         if not keepGoing:
             return self.resolve()
         return None
@@ -40,11 +41,11 @@ class gameBase(abstractGame):
     def resolve(self) -> list[abstractParticipant]:
         """Determines who is the winner and returns a list of winners"""
         #handle the dealer's turn
-        action = self.dealer.turn(self)
+        action = self.dealer.turn(self.dealer.cards, self.dealer.cards, self.turnId)
         while action != playerActions.STAND:
             if action == playerActions.HIT:
                 self.dealer.cards.append(self.cards.pop())
-            action = self.dealer.turn(self)
+            action = self.dealer.turn(self.dealer.cards, self.dealer.cards, self.turnId)
         winner = []
         ignore = []
         #Resolve the dealer
@@ -68,15 +69,15 @@ class gameBase(abstractGame):
         self.payOut(winner, ignore)
         return winner
     
-    def payOut(self, winners:list[abstractParticipant], ignore:list[abstractParticipant]=[]) -> None:
+    def payOut(self, winners:list[abstractHand], ignore:list[abstractHand]=[]) -> None:
         """Pays out the bets of each winner and collects loser's bets to the dealer"""
         for key, value in self.bets.items():
             if key in winners:
                 bonus = int(value * 0.5)
                 self.dealer.funds -= bonus
-                key.funds += value + bonus
+                key.player.funds += value + bonus
             elif key in ignore:
-                key.funds += value
+                key.player.funds += value
             else:
                 self.dealer.funds += value
 

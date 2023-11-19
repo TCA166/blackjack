@@ -10,7 +10,10 @@ BLACKJACK = [10, 11]
 
 THRESH = 21
 
+DOUBLE_TURN_LIMIT = 1
+
 class playerActions(Enum):
+    """Enumerator of actions a participant may take"""
     STAND = 0
     HIT = 1
     DOUBLE_DOWN = 2
@@ -32,37 +35,65 @@ class cardSet(list[int]):
     def isBlackJack(self) -> bool:
         return Counter(self) == Counter(BLACKJACK)
 
-class abstractParticipant(ABC):
+class abstractHand(ABC):
+    """Abstract class that represents a participant's hand"""
     cards:cardSet
-    name:str
+    player:'abstractPlayer'
+    @abstractmethod
+    def __init__(self, player:'abstractPlayer', *cards:tuple[int]) -> None:...
+
+    @abstractmethod
+    def giveCard(self, card:int) -> None:
+        """Appends the underlying cardSet with the given card"""
+
+    @abstractmethod
+    def sum(self) -> int:
+        """Returns the sum of the held cards"""
+
+    @abstractmethod
+    def setCards(self, *cards:int) -> None:
+        """Set's this hand's cards to the provided cards"""
+
+    @abstractmethod
+    def __str__(self) -> str:...
+
+class abstractParticipant(ABC):
+    """Abstract class that represents a blackjack participant, so either a dealer or a player"""
+    name:str #for cosmetic purposes
     funds:int
     @abstractmethod
     def __init__(self, name:str, funds:int) -> None:...
 
     @abstractmethod
-    def setCards(self, *cards:tuple[int]) -> None:
-        """Provides the player with the cards"""
-
-    @abstractmethod
-    def turn(self, game:'abstractGame') -> playerActions:
+    def turn(self, dealerCards:cardSet, hand:abstractHand, turnId:int) -> playerActions:
         """Handles the player logic, returns an int indicating the action the player wants to take"""
-
-    def __str__(self) -> str:
-        return f"{self.name}|{self.funds}:{self.cards}"
-
-    def sum(self) -> int:
-        """Returns the sum of all cards the player has"""
-        return self.cards.sum()
 
 class abstractPlayer(abstractParticipant):
     @abstractmethod
     def bet(self) -> int:
-        """Requests the player bet at the start of the game"""
+        """Requests the player's bet"""
 
-class abstractDealer(abstractParticipant):
+class abstractDealer(abstractParticipant, abstractHand):
+    """Abstract class that represent's a blackjack dealer, since a dealer cannot hold multiple hands it inherits from both participant and hand"""
     hiddenCard:int
 
 class abstractGame(ABC):
     dealer:abstractDealer
-    players:list[abstractPlayer]
+    hands:list[abstractHand]
+    bets:dict[abstractHand, int]
     turnId:int
+
+class hand(abstractHand):
+    def __init__(self, player:abstractPlayer, *cards:tuple[int]) -> int:
+        self.player = player
+        self.cards = cardSet(cards)
+    def giveCard(self, card:int) -> None:
+        self.cards.append(card)
+    def setCards(self, *cards:int) -> None:
+        self.cards.extend(cards)
+    def sum(self) -> int:
+        """Returns the sum of all cards the player has"""
+        return self.cards.sum()
+    def __str__(self) -> str:
+        return f"{self.player.name}:{self.cards}"
+    

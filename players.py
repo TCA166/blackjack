@@ -1,19 +1,32 @@
-from blackjack import abstractPlayer, abstractDealer, playerActions, abstractGame, cardSet
+from blackjack import abstractPlayer, abstractDealer, playerActions, cardSet, hand, abstractHand, DOUBLE_TURN_LIMIT
 
-class dealerBase(abstractDealer):
+def safeFunc(func):
+    def inner(*args, **kwargs):
+        for arg in args:
+            t = type(arg)
+            arg = t(arg)
+        for key, value in kwargs.items():
+            t = type(value)
+            kwargs[key] = t(value)
+        func(*args, **kwargs)
+    return inner
+
+class dealerBase(abstractDealer, hand):
     """Basic dealer that follows all the standard rules"""
     def __init__(self, name:str, funds:int=1000) -> None:
+        self.player = self
         self.name = name
         self.funds = funds
-    
-    def setCards(self, hiddenCard:int, *cards:tuple[int]) -> None:
-        self.hiddenCard = hiddenCard
-        self.cards = cardSet(cards)
+        self.cards = cardSet()
+
+    def setCards(self, *cards: int) -> None:
+        self.hiddenCard = cards[0]
+        return super().setCards(*cards[1:])
 
     def sum(self) -> int:
         return self.cards.sum() + self.hiddenCard
     
-    def turn(self, game:abstractGame) -> playerActions:
+    def turn(self, dealerCards:cardSet, hand:abstractHand, turnId:int) -> playerActions:
         if self.sum() < 17:
             return playerActions.HIT
         return playerActions.STAND
@@ -27,11 +40,8 @@ class playerBase(abstractPlayer):
         self.name = name
         self.funds = funds
 
-    def setCards(self, *cards:int) -> None:
-        self.cards = cardSet(cards)
-
-    def turn(self, game:abstractGame) -> playerActions:
-        if self.sum() > 11:
+    def turn(self, dealerCards:cardSet, hand:abstractHand, turnId:int) -> playerActions:
+        if hand.sum() > 11:
             return playerActions.STAND
         return playerActions.HIT
     
@@ -41,13 +51,10 @@ class playerBase(abstractPlayer):
         return bet
 
 class interactivePlayer(playerBase):
-    def turn(self, game:abstractGame) -> playerActions:
-        print(f"Turn:{game.turnId}========")
-        print(f"Dealer cards:[X]{game.dealer.cards}")
-        for p in game.players:
-            if p != self:
-                print(f"{p.name} cards:{p.cards}")
-        print(str(self))
+    def turn(self, dealerCards:cardSet, hand:abstractHand, turnId:int) -> playerActions:
+        print(f"Turn:{turnId}========")
+        print(f"Dealer cards:[X]{dealerCards}")
+        print(str(hand))
         while True:
             action = input("Hit, stand or double down?[H/S/D]").capitalize()
             if action == "H":
@@ -55,7 +62,10 @@ class interactivePlayer(playerBase):
             elif action == "S":
                 return playerActions.STAND
             elif action == "D":
-                return playerActions.DOUBLE_DOWN
+                if turnId > DOUBLE_TURN_LIMIT:
+                    print("Too late to double down")
+                else:
+                    return playerActions.DOUBLE_DOWN
             else:
                 print("Command misunderstood")
     def bet(self) -> int:
