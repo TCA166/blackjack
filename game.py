@@ -36,6 +36,15 @@ class gameBase(abstractGame):
                     self.bets[p] += self.bets[p]
                     p.cards.append(self.cards.pop())
                     self.hands.remove(p)
+                    keepGoing = True
+                elif action == playerActions.SPLIT:
+                    if p.cards[0] != [p.cards[1]] or self.turnId > 1:
+                        raise Exception("Split invalid")
+                    p.cards[1] = self.cards.pop()
+                    newHand = hand(p.player, p.cards[1], self.cards.pop())
+                    self.bets[newHand] = p.player.bet(newHand)
+                    self.hands.append(newHand)
+                    keepGoing = True
         if not keepGoing:
             return self.resolve()
         return None

@@ -71,7 +71,7 @@ class abstractParticipant(ABC):
 
 class abstractPlayer(abstractParticipant):
     @abstractmethod
-    def bet(self) -> int:
+    def bet(self, hand:abstractHand | None = None) -> int:
         """Requests the player's bet"""
 
 class abstractDealer(abstractParticipant, abstractHand):
