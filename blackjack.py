@@ -2,10 +2,17 @@ from abc import ABC, abstractmethod
 from enum import Enum
 from collections import Counter
 
-J = 10
-Q = 10
-K = 10
-CARD_TYPES = [2, 3, 4, 5, 6, 7, 8, 9, 10, J, Q, K, 11] #ace must be the last value
+class card(int):
+    def __new__(self, value:int, symbol:str = None) -> None:
+        self.symbol = symbol
+        return super(card, self).__new__(self, value)
+    def __str__(self) -> str:
+        if self.symbol == None:
+            return super().__str__(self)
+        else:
+            return self.symbol
+
+CARD_TYPES = [card(2), card(3), card(4), card(5), card(6), card(7), card(8), card(9), card(10), card(10, "J"), card(10, "Q"), card(10, "K"), card(11, "A")] #ace must be the last value
 BLACKJACK = [10, 11]
 
 THRESH = 21

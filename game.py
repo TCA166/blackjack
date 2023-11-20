@@ -38,13 +38,15 @@ class gameBase(abstractGame):
                     self.hands.remove(p)
                     keepGoing = True
                 elif action == playerActions.SPLIT:
-                    if p.cards[0] != [p.cards[1]] or self.turnId > 1:
+                    if p.cards[0] != p.cards[1] or self.turnId > 1:
                         raise Exception("Split invalid")
                     p.cards[1] = self.cards.pop()
                     newHand = hand(p.player, p.cards[1], self.cards.pop())
                     self.bets[newHand] = p.player.bet(newHand)
                     self.hands.append(newHand)
                     keepGoing = True
+                elif action != playerActions.STAND:
+                    raise Exception("Unexpected player action")
         if not keepGoing:
             return self.resolve()
         return None

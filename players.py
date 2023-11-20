@@ -50,18 +50,18 @@ class interactivePlayer(playerBase):
                 actionNames.append("double down")
             if hand.cards[0] == hand.cards[1] and turnId == 1:
                 actionNames.append("split")
-            actions = tuple(a[0].capitalize() for a in actionNames)
+            actions = tuple(a[0:2].upper() for a in actionNames)
             prompt = ", ".join(actionNames[:-1]) + " or " + actionNames[-1] + "?[" +  "/".join(actions) + "]"
-            action = input(prompt).capitalize()
+            action = input(prompt).upper()
             if action not in actions:
                 print("Command misunderstood")
-            elif action == "H":
+            elif action == "HI":
                 return playerActions.HIT
-            elif action == "S":
+            elif action == "ST":
                 return playerActions.STAND
-            elif action == "D":
+            elif action == "DO":
                 return playerActions.DOUBLE_DOWN
-            elif action == "P":
+            elif action == "SP":
                 return playerActions.SPLIT
     def bet(self, hand:abstractHand | None = None) -> int:
         print(f"Funds:{self.funds}")
